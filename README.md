@@ -21,21 +21,6 @@ Dev options:
 - `--powerups` drops one of each powerup and 3 grenades next to the spawn when a game starts
 - `PORT=4000` changes the port
 
-## Controls
-
-N next song · WASD move · Shift sprint (uses stamina) · mouse aim · left click shoot · Q throw grenade · Enter chat · Tab scoreboard · M mute
-
-## Music
-
-The songs themselves aren't in this repo. Drop your own audio files into `public/music/` on the machine that hosts the game.
-
-Every audio file in [public/music](public/music) (mp3, ogg, wav, m4a, opus, flac) is shuffled as background music. Name files `Artist - Title.mp3` and the player shows them that way. Music only plays during a match. The server picks the song, and everyone in the match hears the same song in sync. New files join the shuffle when the list next reshuffles.
-
-The player at the bottom of the screen has:
-
-- **Skip** (or press N): changes the song for everyone, and announces it in chat.
-- **On/off button:** only silences it for you; it keeps time, so it's still in sync when you turn it back on.
-- **Music and SFX volume sliders:** each browser remembers its own settings.
 
 ## Custom match options
 
@@ -45,22 +30,6 @@ The host can switch these on in the lobby. They're off by default.
 - **Friendly fire:** bullets, katana swings and explosions hurt teammates. They never hurt the person who fired.
 
 ## Maps
-
-The host picks the map in the lobby:
-
-- **Suburb Street:** houses, porch pumpkins, streetlights and a cemetery.
-- **Corn Farm:** three cornfields with one-tile furrows (corn blocks movement and bullets), a red barn, a silo, hay bales, a pond, a pumpkin patch and a bonfire in the farmyard. Zombies also crawl out of the corn rows.
-- **Dead Mall:**
-  - **Inside:** an abandoned mall with a department store (clothing racks, mannequins, a makeup counter), six themed shops and a food court. The atrium has a murky fountain under a broken skylight.
-  - **Shops:** each has a neon sign with its name, its own floor, fixtures and light, and a stockroom in the back that zombies come out of.
-    - **Pets:** an aquarium wall that glows blue, play pens with puppies, kittens and bunnies, and hamster and bird cages.
-    - **Books:** books on every wall, long stacks, a reading nook with a rug and chairs, and a new-releases table.
-    - **Music:** an instrument shop with guitars on the walls and on stands, pianos, an amp wall and drum kits.
-    - **Arcade, Tech (TVs) and Candy:** the other three shops.
-  - **Food court:** McDonald's, Wendy's, Pizza and Tacos stalls, each with its own sign and counter colors.
-  - **Emergency exits:** every stockroom, the department store and the food court kitchens have back doors to the parking lot, marked with EXIT signs. Zombies come in through them too.
-  - **Lighting:** flickering and burnt-out fluorescents, neon signs that stutter off, and red exit signs.
-  - **Outside:** four entrances lead out to a parking lot full of abandoned and burnt-out cars.
 
 Maps are generated in [shared/map.js](shared/map.js). Add one to `MAPS` and `generateMap` to make another.
 
