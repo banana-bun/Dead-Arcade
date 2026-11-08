@@ -1,6 +1,7 @@
-# Dead Suburb Arcade
+# Dead Arcade
+names a work in progress
 
-Top-down, pixel-art Halloween co-op zombie shooter for 2–6 friends, inspired by Black Ops' Dead Ops Arcade.
+Top-down, pixel-art co-op zombie shooter for 2–6 friends, inspired by Black Ops' Dead Ops Arcade.
 
 ## Run it
 
