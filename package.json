@@ -1,0 +1,14 @@
+{
+  "name": "dead-suburb-arcade",
+  "version": "0.1.0",
+  "description": "Top-down Halloween co-op zombie shooter for 2-6 friends",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "solo": "node server/index.js --solo"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

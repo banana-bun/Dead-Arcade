@@ -1,0 +1,20 @@
+# Dependencies (recreate with `npm install`)
+node_modules/
+
+# Music: songs aren't published with the code. Drop audio files into public/music/ on the
+# machine that hosts the game. Delete these lines if you want the songs in the repo.
+public/music/*
+!public/music/.gitkeep
+
+# Logs and local settings
+npm-debug.log*
+*.log
+.env
+.claude/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

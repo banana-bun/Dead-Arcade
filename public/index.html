@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dead Suburb Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- main menu -->
+  <section id="menu" class="screen active">
+    <div class="panel menu-panel">
+      <h1 class="title">DEAD<span>SUBURB</span>ARCADE</h1>
+      <p class="tag">Halloween night. The cul-de-sac is crawling. 2&ndash;6 players.</p>
+      <label class="field">Your name
+        <input id="name-input" maxlength="16" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="row">
+        <button id="quick-btn" class="btn primary">Quick Match</button>
+        <button id="create-btn" class="btn">Create Lobby</button>
+      </div>
+      <label class="check"><input type="checkbox" id="private-check"> Private lobby (join by code only)</label>
+      <div class="row">
+        <input id="code-input" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false">
+        <button id="join-btn" class="btn">Join</button>
+      </div>
+      <div class="list-head"><span>Open lobbies</span><button id="refresh-btn" class="link">refresh</button></div>
+      <ul id="lobby-list" class="lobby-list"></ul>
+      <p class="hint">WASD move &middot; Shift sprint &middot; Mouse aim &middot; Click shoot &middot; Q grenade &middot; Enter chat &middot; Tab scores &middot; N next song &middot; M mute</p>
+    </div>
+  </section>
+
+  <!-- lobby room -->
+  <section id="room" class="screen">
+    <div class="panel room-panel">
+      <div class="room-left">
+        <h2 id="room-name">Lobby</h2>
+        <div class="code-box">Code <strong id="room-code">----</strong></div>
+        <div id="map-options" class="map-options"></div>
+        <div class="options-head">Custom match</div>
+        <div id="match-options" class="match-options"></div>
+        <ul id="player-list" class="player-list"></ul>
+        <p id="room-status" class="hint"></p>
+        <div class="row">
+          <button id="start-btn" class="btn primary">Start Game</button>
+          <button id="leave-btn" class="btn">Leave</button>
+        </div>
+      </div>
+      <div class="room-right">
+        <div id="lobby-chat-log" class="chat-log"></div>
+        <form id="lobby-chat-form" class="chat-form">
+          <input id="lobby-chat-input" maxlength="160" placeholder="Say something spooky..." autocomplete="off">
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- in-game HUD -->
+  <section id="hud" class="hud">
+    <div class="hud-tl">
+      <div class="round">ROUND <span id="hud-round">0</span></div>
+      <div id="hud-left" class="left"></div>
+    </div>
+    <div id="boss-bar" class="boss-bar hidden">
+      <div class="boss-name">THE GOURD KING</div>
+      <div class="boss-track"><div id="boss-fill" class="boss-fill"></div></div>
+    </div>
+    <div id="down-alert" class="down-alert hidden"></div>
+    <ul id="team" class="team"></ul>
+    <div class="hud-br">
+      <div id="hud-weapon" class="weapon">Handgun</div>
+      <div id="hud-ammo" class="ammo">&infin;</div>
+      <div id="hud-frags" class="frags" title="Grenades (Q to throw)"></div>
+      <div class="hp"><div id="hud-hp" class="hp-fill"></div><span id="hud-hp-text">100</span></div>
+      <div id="stamina" class="stamina"><div id="hud-stamina" class="stamina-fill"></div></div>
+      <div id="hud-power" class="power hidden"></div>
+    </div>
+    <div id="banner" class="banner"><div id="banner-text"></div><div id="banner-sub"></div></div>
+    <div id="status" class="status"></div>
+    <div id="toasts" class="toasts"></div>
+    <div class="game-chat">
+      <div id="game-chat-log" class="chat-log game"></div>
+      <form id="game-chat-form" class="chat-form hidden">
+        <input id="game-chat-input" maxlength="160" placeholder="Enter to send, Esc to cancel" autocomplete="off">
+      </form>
+    </div>
+    <div id="scoreboard" class="panel scoreboard hidden"></div>
+  </section>
+
+  <!-- game over -->
+  <section id="gameover" class="screen">
+    <div class="panel over-panel">
+      <h2 class="title small">THE SUBURB FELL</h2>
+      <p id="over-round" class="tag"></p>
+      <table id="over-table" class="stats"></table>
+      <button id="over-btn" class="btn primary">Back to Lobby</button>
+    </div>
+  </section>
+
+  <!-- music player: shuffles everything in public/music -->
+  <div id="music" class="music hidden">
+    <button id="music-play" class="music-btn" title="Music on / off (just for you)">
+      <svg viewBox="0 0 8 8" class="icon-play"><path d="M2 1v6l5-3z"/></svg>
+      <svg viewBox="0 0 8 8" class="icon-pause"><path d="M2 1h1.5v6H2zM4.5 1H6v6H4.5z"/></svg>
+    </button>
+    <button id="music-next" class="music-btn" title="Skip song for everyone (N)">
+      <svg viewBox="0 0 8 8"><path d="M1 1v6l4-3zM5 1h1.5v6H5z"/></svg>
+    </button>
+    <div class="music-info">
+      <div class="music-label"><span class="eq"><i></i><i></i><i></i></span> <span id="music-artist">Now playing</span></div>
+      <div id="music-title" class="music-title">-</div>
+    </div>
+    <label class="vol" title="Music volume"><span>MUSIC</span><input type="range" id="music-vol" min="0" max="100"></label>
+    <label class="vol" title="Sound effects volume"><span>SFX</span><input type="range" id="sfx-vol" min="0" max="100"></label>
+  </div>
+
+  <div id="error" class="error hidden"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
