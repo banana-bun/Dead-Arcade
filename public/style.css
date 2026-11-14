@@ -113,6 +113,9 @@ input:focus { border-color: var(--purple); box-shadow: 0 0 10px rgba(181, 108, 2
 .player-list li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 2px solid var(--line); margin-bottom: 6px; background: #0c0614; }
 .player-list .dot, .team .dot { width: 12px; height: 12px; flex: none; box-shadow: 0 0 8px currentColor; }
 .player-list .host { margin-left: auto; color: var(--orange); font-size: 18px; }
+.player-list .avatar { width: 36px; height: 40px; flex: none; image-rendering: pixelated; background: #1c1028; border: 2px solid; margin: -3px 0; }
+.player-list .reroll { font-size: 17px; }
+.player-list .reroll:hover { color: #ffe0b0; }
 .player-list li.slot { color: #4a3a5a; border-style: dashed; }
 
 .chat-log {

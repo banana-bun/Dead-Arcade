@@ -4,7 +4,7 @@ import { unlockAudio, toggleMute, sfx, getSfxVolume, setSfxVolume } from './audi
 import { music } from './music.js';
 import { WEAPONS, PLAYER, WEAPON_LIST, MATCH_OPTIONS, FRAGS, RARITIES, rarityOf } from '/shared/config.js';
 import { MAPS, generateMap } from '/shared/map.js';
-import { renderMapBackground } from './art.js';
+import { renderMapBackground, drawAvatar } from './art.js';
 
 const $ = id => document.getElementById(id);
 
@@ -127,11 +127,21 @@ function renderRoom() {
   ul.innerHTML = '';
   for (const p of room.players) {
     const li = document.createElement('li');
-    const dot = document.createElement('span');
-    dot.className = 'dot'; dot.style.background = p.color; dot.style.color = p.color;
+    // a little portrait of their character
+    const face = document.createElement('canvas');
+    face.className = 'avatar'; face.width = 18; face.height = 20;
+    drawAvatar(face, p.look);
+    face.style.borderColor = p.color;
     const nm = document.createElement('span');
     nm.textContent = p.name + (p.id === myId ? ' (you)' : '');
-    li.append(dot, nm);
+    li.append(face, nm);
+    if (p.id === myId && room.state !== 'playing') {
+      const reroll = document.createElement('button');
+      reroll.className = 'link reroll'; reroll.textContent = 'new look';
+      reroll.title = 'Randomize your character (still unique in this lobby)';
+      reroll.onclick = () => send({ t: 'reroll' });
+      li.append(reroll);
+    }
     if (p.id === room.hostId) {
       const h = document.createElement('span'); h.className = 'host'; h.textContent = 'HOST'; li.append(h);
     }
@@ -443,7 +453,10 @@ function startGame(mapId, options = {}) {
   show('none');
   document.body.classList.add('playing');
   lastHudKey = '';
-  game = new GameClient({ canvas: $('game'), send, myId, isTyping: () => chatOpen, hud, mapId, options });
+  game = new GameClient({
+    canvas: $('game'), send, myId, isTyping: () => chatOpen, hud, mapId, options,
+    getLook: id => room?.players.find(p => p.id === id)?.look,
+  });
   game.start();
 }
 

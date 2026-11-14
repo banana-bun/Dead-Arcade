@@ -26,6 +26,36 @@ export const PLAYER = {
 
 export const PLAYER_COLORS = ['#ff8a2a', '#5ad1ff', '#b56cff', '#7dff6a', '#ff5ab4', '#ffe45a'];
 
+// Character looks. Every player in a lobby gets a different skin tone AND a different hairstyle
+// (both pools are bigger than MAX_PLAYERS); hair colour, shirt style, pants and shoes are random.
+// The shirt is always the player's lobby colour so teammates stay easy to tell apart.
+export const LOOKS = {
+  skins: ['#f6d7c3', '#eac4a6', '#dcae84', '#c28a5c', '#a06b43', '#7d4f2f', '#5c3a22', '#3f2716'],
+  hairStyles: ['short', 'long', 'ponytail', 'curly', 'mohawk', 'buzz', 'pigtails', 'beanie', 'cap'],
+  hairColors: ['#1a1412', '#3a2418', '#5a3a22', '#8a4a22', '#c8a050', '#e8d8a8', '#b8441a', '#7a7a80'],
+  dyes: ['#ff5ab4', '#5ad1ff', '#7dff6a', '#b56cff', '#ff3a3a'], // party hair, sometimes
+  shirtStyles: ['tee', 'hoodie', 'jacket', 'stripes', 'flannel', 'tank'],
+  pants: ['#2a4a7a', '#1a1a22', '#8a7a5a', '#4a4a52', '#3a4a2a', '#5a2a2a'],
+  shoes: ['#e8e8e8', '#1a1a1a', '#c82a2a', '#5a3a1a'],
+};
+
+const pickFrom = list => list[Math.floor(Math.random() * list.length)];
+
+// A random look that doesn't reuse a skin tone or hairstyle already taken in the lobby.
+export function randomLook(taken = [], shirtColor = PLAYER_COLORS[0]) {
+  const freeSkins = LOOKS.skins.filter(s => !taken.some(l => l?.skin === s));
+  const freeHair = LOOKS.hairStyles.filter(h => !taken.some(l => l?.hair === h));
+  return {
+    skin: pickFrom(freeSkins.length ? freeSkins : LOOKS.skins),
+    hair: pickFrom(freeHair.length ? freeHair : LOOKS.hairStyles),
+    hairColor: Math.random() < 0.2 ? pickFrom(LOOKS.dyes) : pickFrom(LOOKS.hairColors),
+    shirt: pickFrom(LOOKS.shirtStyles),
+    shirtColor,
+    pants: pickFrom(LOOKS.pants),
+    shoes: pickFrom(LOOKS.shoes),
+  };
+}
+
 // `tier` is the boss round that introduces a weapon (0 = available from the start).
 // `ammo` is shots (or swings for the katana). Special behaviours:
 //   melee   - swings hit every zombie in an arc in front of you instead of firing bullets

@@ -25,8 +25,9 @@ const RAINBOW = ['#ff4a4a', '#ffb34a', '#ffe45a', '#7dff6a', '#5ad1ff', '#b56cff
 const W = Object.fromEntries(WEAPON_LIST.map((w, i) => [w, i])); // weapon key -> code
 
 export class GameClient {
-  constructor({ canvas, send, myId, isTyping, hud, mapId, options = {} }) {
+  constructor({ canvas, send, myId, isTyping, hud, mapId, options = {}, getLook = () => null }) {
     this.options = options; // lobby toggles: { noEyes, friendlyFire }
+    this.getLook = getLook; // player id -> their character look (from the lobby)
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.send = send;
@@ -713,7 +714,6 @@ export class GameClient {
         actors.push({ y: pos.y, p: pos });
       }
       actors.sort((a, b) => a.y - b.y);
-      const order = [...(this.latest?.players.keys() ?? [])];
       for (const act of actors) {
         if (act.z) {
           const z = act.z;
@@ -742,8 +742,10 @@ export class GameClient {
           // invincible: rainbow flashing like a star; invisible: see-through (fainter for teammates)
           const star = p.star > 0, ghost = p.ghost > 0;
           const color = star ? RAINBOW[Math.floor(t * 14) % RAINBOW.length] : p.color;
+          const base = this.getLook(p.id);
+          const look = base && star ? { ...base, shirtColor: color } : base; // invincibility flashes their shirt
           if (ghost) ctx.globalAlpha = p.id === this.myId ? 0.45 : 0.25;
-          art.drawPlayer(ctx, p.x, p.y, p.a, color, Math.max(0, order.indexOf(p.id)), p.state, t, this.moving.get(p.id), p.minigun > 0 ? W.minigun : p.weapon);
+          art.drawPlayer(ctx, p.x, p.y, p.a, look, p.state, t, this.moving.get(p.id), p.minigun > 0 ? W.minigun : p.weapon);
           ctx.globalAlpha = 1;
           if (p.state === 0) lights.push(['cone', p.x, p.y, p.a]);
           lights.push([p.x, p.y, star ? 60 : 40, star ? '#ffe45a' : p.color, star ? 0.8 : 0.35]);

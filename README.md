@@ -77,6 +77,7 @@ Maps are generated in [shared/map.js](shared/map.js). Add one to `MAPS` and `gen
   - **Minigun (12s):** a minigun with unlimited ammo replaces your gun until the timer runs out, then you get your gun back with its ammo untouched.
 - **Flashlights:** stop at walls, houses, trees, corn and tall shelves, but shine through glass, water, fences and low fixtures.
 - **Round clear:** "Catch your breath" (1% of the time it says "Take a Drink").
+- **Characters:** everyone gets a randomized person when they join a lobby. Skin tone, hairstyle (short, long, ponytail, curly, mohawk, buzz with beard, pigtails, beanie, cap), hair color (sometimes dyed), shirt style, pants and shoes are random. No two players in a lobby share a skin tone or hairstyle, and your shirt is your player color. Hit **new look** next to your name in the lobby to re-roll.
 - **Downed:** at 0 HP you go down. Stand next to a downed teammate for 2.5s to revive them. If nobody does within 20s, they're out until the next round. If everyone is down, it's game over.
   - **Teammate alerts:** everyone else hears an alarm, sees a banner and a red screen flash, and gets a pulsing alert. The alert shows which way the downed player is, how far, and how long until they bleed out.
 

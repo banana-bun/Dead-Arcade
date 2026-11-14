@@ -71,6 +71,7 @@ public/music/      Songs (not in git; see .gitignore). Any audio file dropped he
 - **Rarity** (`RARITIES`, `GUN_DROPS[...].rarity`) only affects visuals: drop glow/ring/arrow colour, HUD weapon colour, pickup messages. `rainbow` and `cosmic` are animated in `dropColor()` (game.js).
 - **Powerups:** `star` (invincible, touching zombies kills them), `ghost` (zombies ignore you, contact still hurts), `nuke` (kills the 50 nearest non-boss zombies), `minigun` (overrides your gun with an unlimited minigun). Timers are on the player object and sent in snapshots.
 - **Lobby options** (`MATCH_OPTIONS`): `noEyes` (client-only: no glowing zombie eyes) and `friendlyFire` (server: bullets, swings and blasts hurt teammates, never the shooter). Options are copied into the Game at start and sent to clients in the `start` message.
+- **Character looks** (`LOOKS`, `randomLook` in config): the server gives each client a `look` when they join a lobby (and on a `reroll` message), never reusing a skin tone or hairstyle already in the room. Keep both pools bigger than `MAX_PLAYERS`. Looks travel in the lobby's `room` message, not in snapshots; GameClient reads them through `getLook(id)`. `art.drawPlayer` draws the person from a look, and `art.drawAvatar` draws the lobby portrait.
 - **Shared music:** the station only exists while a match is running. Clients report `musicEnded`, and a `seq` number makes stale or duplicate reports harmless. Local pause just mutes, so the player stays in sync.
 
 ## Rendering notes (public/js/game.js)

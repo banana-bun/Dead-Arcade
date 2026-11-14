@@ -856,8 +856,6 @@ export function drawExit(ctx, x, y) {
   ctx.fillRect(x - 1, y - 2, 1, 3); ctx.fillRect(x + 1, y - 2, 1, 3); ctx.fillRect(x + 3, y - 2, 2, 1); ctx.fillRect(x + 3, y - 1, 1, 2);
 }
 
-const HATS = ['witch', 'pumpkin', 'horns', 'sheet', 'frank', 'cat'];
-
 // Held weapon per weapon code (WEAPON_LIST order): [length, thickness, body color, tip color, side offsets]
 const GUN_LOOK = [
   [9, 2, '#2a2a30', '#5a5a66'],  // handgun
@@ -875,65 +873,179 @@ const GUN_LOOK = [
   [13, 3, '#2a2a32', '#ffb03a'], // minigun (powerup)
 ];
 
-export function drawPlayer(ctx, x, y, a, color, idx, state, t, moving, weapon = 0) {
+// Fallback for anyone without a look yet (shouldn't happen, but never draw nothing).
+const DEFAULT_LOOK = { skin: '#dcae84', hair: 'short', hairColor: '#3a2418', shirt: 'tee', shirtColor: '#ff8a2a', pants: '#2a4a7a', shoes: '#1a1a1a' };
+
+// A player as a tiny person seen from above at a slight angle (about 9x14 px): shoes and legs,
+// a shirt in their style, arms holding the gun toward the aim, and a head with their hairstyle.
+// `look` comes from randomLook() in shared/config.js. weapon -1 draws them empty-handed (lobby avatars).
+export function drawPlayer(ctx, x, y, a, look, state, t, moving, weapon = 0) {
+  look = look || DEFAULT_LOOK;
   x = Math.round(x); y = Math.round(y);
   const ca = Math.cos(a), sa = Math.sin(a);
+  const dir = ca >= 0 ? 1 : -1;      // facing right or left
+  const away = sa < -0.55;           // aiming up the screen: we see the back of their head
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.beginPath(); ctx.ellipse(x + 1, y + 3, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
-  if (state === 1) { // downed: lying flat, flashing
-    ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 8);
-    ctx.fillStyle = color; ctx.fillRect(x - 6, y - 2, 12, 5);
-    ctx.fillStyle = '#e8c8a8'; ctx.fillRect(x + 4, y - 2, 4, 4);
-    ctx.globalAlpha = 1;
-    return;
-  }
-  // feet bob when walking
-  const step = moving ? Math.sin(t * 14) * 1.5 : 0;
-  ctx.fillStyle = '#1a1a22';
-  px(ctx, x - 3 - sa * step, y + 1 + ca * step, 2, 2);
-  px(ctx, x + 2 + sa * step, y + 1 - ca * step, 2, 2);
-  // gun
-  const [glen, gw, gbody, gtip, offsets = [0]] = GUN_LOOK[weapon] || GUN_LOOK[0];
-  for (const off of offsets) {
-    const ox = x - sa * off, oy = y - 1 + ca * off;
-    ctx.fillStyle = gbody;
-    for (let i = 3; i <= glen; i++) px(ctx, ox + ca * i, oy + sa * i, gw, gw);
-    ctx.fillStyle = gtip; px(ctx, ox + ca * glen, oy + sa * glen, Math.max(1, gw - 1), Math.max(1, gw - 1));
-  }
-  if (weapon === 5) { // katana handle + guard
-    ctx.fillStyle = '#2a1a3a'; for (let i = 2; i <= 5; i++) px(ctx, x + ca * i, y - 1 + sa * i, 2, 2);
-    ctx.fillStyle = '#c8a040'; px(ctx, x + ca * 6 - sa, y - 1 + sa * 6 + ca, 2, 2);
-  }
-  // body
-  ctx.fillStyle = shade(color, -0.45);
-  ctx.beginPath(); ctx.arc(x, y - 1, 5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(x - 0.5, y - 1.5, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 1, y + 3, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  if (state === 1) { drawDowned(ctx, x, y, look, t); return; }
+
+  // gun (and the arm holding it) goes behind the body when aiming up, in front otherwise
+  const drawGun = () => {
+    if (weapon < 0) return;
+    // arm from the shoulder toward the aim
+    ctx.fillStyle = look.shirt === 'tank' ? look.skin : look.shirtColor;
+    for (let i = 0; i <= 2; i++) px(ctx, x + ca * i, y - 4 + sa * i, 2, 2);
+    ctx.fillStyle = look.skin; px(ctx, x + ca * 3, y - 4 + sa * 3, 2, 2);
+    const [glen, gw, gbody, gtip, offsets = [0]] = GUN_LOOK[weapon] || GUN_LOOK[0];
+    for (const off of offsets) {
+      const ox = x - sa * off, oy = y - 4 + ca * off;
+      ctx.fillStyle = gbody;
+      for (let i = 3; i <= glen; i++) px(ctx, ox + ca * i, oy + sa * i, gw, gw);
+      ctx.fillStyle = gtip; px(ctx, ox + ca * glen, oy + sa * glen, Math.max(1, gw - 1), Math.max(1, gw - 1));
+    }
+    if (weapon === 5) { // katana handle + guard
+      ctx.fillStyle = '#2a1a3a'; for (let i = 2; i <= 5; i++) px(ctx, x + ca * i, y - 4 + sa * i, 2, 2);
+      ctx.fillStyle = '#c8a040'; px(ctx, x + ca * 6 - sa, y - 4 + sa * 6 + ca, 2, 2);
+    }
+  };
+  if (away) drawGun();
+
+  // legs + shoes, stepping while walking
+  const step = moving ? Math.round(Math.sin(t * 14) * 1.5) : 0;
+  ctx.fillStyle = look.pants;
+  ctx.fillRect(x - 2, y - 1, 2, 3 + step); ctx.fillRect(x + 1, y - 1, 2, 3 - step);
+  ctx.fillStyle = look.shoes;
+  ctx.fillRect(x - 2, y + 2 + step, 2, 1); ctx.fillRect(x + 1, y + 2 - step, 2, 1);
+
+  drawTorso(ctx, x, y, look, dir);
+
   // head
-  ctx.fillStyle = '#e8c8a8';
-  ctx.fillRect(x - 2, y - 7, 5, 4);
-  ctx.fillStyle = '#1a1a1a';
-  px(ctx, x - 1 + Math.round(ca), y - 6 + Math.round(sa * 0.6)); px(ctx, x + 1 + Math.round(ca), y - 6 + Math.round(sa * 0.6));
-  drawHat(ctx, HATS[idx % HATS.length], x, y - 7, color);
+  const hx = x - 2, hy = y - 10;
+  ctx.fillStyle = look.skin; ctx.fillRect(hx, hy, 5, 5);
+  ctx.fillStyle = shade(look.skin, -0.25); ctx.fillRect(hx, hy + 4, 5, 1); // jaw shadow
+  if (!away) { // face: eyes look the way you aim
+    ctx.fillStyle = '#1a1a1a';
+    const ex = dir > 0 ? hx + 2 : hx + 1;
+    px(ctx, ex, hy + 2); px(ctx, ex + 2, hy + 2);
+  }
+  drawHair(ctx, hx, hy, look, dir, away);
+
+  if (!away) drawGun();
 }
 
-function drawHat(ctx, hat, x, y, color) {
-  switch (hat) {
-    case 'witch':
-      ctx.fillStyle = '#1a1024'; ctx.fillRect(x - 4, y, 9, 1); ctx.fillRect(x - 2, y - 2, 5, 2); ctx.fillRect(x - 1, y - 4, 3, 2); px(ctx, x + 1, y - 5);
-      ctx.fillStyle = color; ctx.fillRect(x - 2, y - 1, 5, 1); break;
-    case 'pumpkin':
-      ctx.fillStyle = '#d06a14'; ctx.fillRect(x - 3, y - 2, 7, 4); ctx.fillStyle = '#ffd36a'; px(ctx, x - 1, y - 1); px(ctx, x + 1, y - 1);
-      ctx.fillStyle = '#3a5a18'; px(ctx, x, y - 3); break;
-    case 'horns':
-      ctx.fillStyle = '#c82a2a'; px(ctx, x - 3, y - 2, 1, 2); px(ctx, x + 3, y - 2, 1, 2); px(ctx, x - 2, y); px(ctx, x + 2, y); break;
-    case 'sheet':
-      ctx.fillStyle = '#e8e8f0'; ctx.fillRect(x - 3, y - 1, 7, 4); ctx.fillStyle = '#101018'; px(ctx, x - 1, y); px(ctx, x + 1, y); break;
-    case 'frank':
-      ctx.fillStyle = '#1a2a14'; ctx.fillRect(x - 3, y - 1, 7, 2); ctx.fillStyle = '#9a9aa8'; px(ctx, x - 4, y + 2); px(ctx, x + 4, y + 2); break;
-    case 'cat':
-      ctx.fillStyle = '#141018'; ctx.fillRect(x - 2, y, 5, 1); px(ctx, x - 2, y - 1); px(ctx, x + 2, y - 1); ctx.fillStyle = '#ffd34a'; break;
+function drawTorso(ctx, x, y, look, dir) {
+  const c = look.shirtColor, dark = shade(c, -0.35);
+  const tx = x - 3, ty = y - 5; // 6x4 torso
+  ctx.fillStyle = c; ctx.fillRect(tx, ty, 6, 4);
+  switch (look.shirt) {
+    case 'tee':
+      ctx.fillStyle = look.skin; px(ctx, tx - 1, ty + 1, 1, 2); px(ctx, tx + 6, ty + 1, 1, 2); // bare forearms
+      ctx.fillStyle = c; px(ctx, tx - 1, ty, 1, 1); px(ctx, tx + 6, ty, 1, 1);            // short sleeves
+      break;
+    case 'tank':
+      ctx.fillStyle = look.skin; px(ctx, tx, ty, 1, 1); px(ctx, tx + 5, ty, 1, 1);         // bare shoulders
+      px(ctx, tx - 1, ty, 1, 3); px(ctx, tx + 6, ty, 1, 3);
+      break;
+    case 'hoodie':
+      ctx.fillStyle = c; px(ctx, tx - 1, ty, 1, 3); px(ctx, tx + 6, ty, 1, 3);             // long sleeves
+      ctx.fillStyle = dark; ctx.fillRect(tx + 1, ty + 2, 4, 1);                            // front pocket
+      ctx.fillStyle = '#e8e8e8'; px(ctx, tx + 2, ty, 1, 2); px(ctx, tx + 3, ty, 1, 2);      // drawstrings
+      break;
+    case 'jacket':
+      ctx.fillStyle = c; px(ctx, tx - 1, ty, 1, 3); px(ctx, tx + 6, ty, 1, 3);
+      ctx.fillStyle = shade(c, 0.6); ctx.fillRect(tx + 2, ty, 2, 4);                        // shirt under the open jacket
+      ctx.fillStyle = dark; px(ctx, tx + 1, ty, 1, 4); px(ctx, tx + 4, ty, 1, 4);           // lapels
+      break;
+    case 'stripes':
+      ctx.fillStyle = look.skin; px(ctx, tx - 1, ty + 1, 1, 2); px(ctx, tx + 6, ty + 1, 1, 2);
+      ctx.fillStyle = '#f0ece4'; ctx.fillRect(tx, ty + 1, 6, 1); ctx.fillRect(tx, ty + 3, 6, 1);
+      break;
+    case 'flannel':
+      ctx.fillStyle = c; px(ctx, tx - 1, ty, 1, 3); px(ctx, tx + 6, ty, 1, 3);
+      ctx.fillStyle = dark; for (let i = 0; i < 6; i += 2) ctx.fillRect(tx + i, ty, 1, 4); ctx.fillRect(tx, ty + 2, 6, 1); // plaid
+      break;
   }
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx, ty + 3, 6, 1); // belt line shadow
+}
+
+function drawHair(ctx, hx, hy, look, dir, away) {
+  const h = look.hairColor, back = dir > 0 ? hx - 1 : hx + 5; // the side behind their face
+  const shadeH = shade(h, -0.3);
+  ctx.fillStyle = h;
+  switch (look.hair) {
+    case 'short':
+      ctx.fillRect(hx, hy - 1, 5, 2); px(ctx, back + (dir > 0 ? 1 : -1), hy + 1, 1, 1);
+      if (away) ctx.fillRect(hx, hy, 5, 4);
+      break;
+    case 'long':
+      ctx.fillRect(hx, hy - 1, 5, 2); ctx.fillRect(hx - 1, hy, 1, 7); ctx.fillRect(hx + 5, hy, 1, 7);
+      if (away) ctx.fillRect(hx, hy, 5, 7);
+      ctx.fillStyle = shadeH; px(ctx, hx - 1, hy + 6); px(ctx, hx + 5, hy + 6);
+      break;
+    case 'ponytail':
+      ctx.fillRect(hx, hy - 1, 5, 2);
+      ctx.fillRect(back, hy + 1, 1, 2); ctx.fillRect(back + (dir > 0 ? -1 : 1), hy + 2, 1, 3); // the tail swings behind
+      if (away) { ctx.fillRect(hx, hy, 5, 4); ctx.fillRect(hx + 2, hy + 4, 1, 3); }
+      break;
+    case 'curly':
+      ctx.fillRect(hx - 1, hy - 2, 7, 3); ctx.fillRect(hx - 1, hy + 1, 1, 2); ctx.fillRect(hx + 5, hy + 1, 1, 2);
+      ctx.fillStyle = shadeH; px(ctx, hx, hy - 2); px(ctx, hx + 2, hy - 2); px(ctx, hx + 4, hy - 2); px(ctx, hx - 1, hy);
+      ctx.fillStyle = h; if (away) ctx.fillRect(hx - 1, hy, 7, 4);
+      break;
+    case 'mohawk':
+      ctx.fillRect(hx + 1, hy - 3, 3, 3); ctx.fillStyle = shadeH; px(ctx, hx + 2, hy - 3);
+      ctx.fillStyle = shade(look.skin, -0.15); px(ctx, hx, hy, 1, 1); px(ctx, hx + 4, hy, 1, 1); // shaved sides
+      if (away) { ctx.fillStyle = h; ctx.fillRect(hx + 1, hy, 3, 4); }
+      break;
+    case 'buzz':
+      ctx.fillStyle = shade(h, 0.1); ctx.fillRect(hx, hy, 5, 1);
+      if (!away) { ctx.fillStyle = h; ctx.fillRect(hx, hy + 3, 5, 2); ctx.fillStyle = shade(look.skin, -0.1); px(ctx, hx + 1, hy + 3, 3, 1); } // beard + lip
+      else { ctx.fillStyle = shadeH; ctx.fillRect(hx, hy, 5, 3); }
+      break;
+    case 'pigtails':
+      ctx.fillRect(hx, hy - 1, 5, 2);
+      ctx.fillRect(hx - 2, hy + 1, 2, 3); ctx.fillRect(hx + 5, hy + 1, 2, 3);
+      ctx.fillStyle = '#ff5ab4'; px(ctx, hx - 1, hy + 1); px(ctx, hx + 5, hy + 1); // hair ties
+      ctx.fillStyle = h; if (away) ctx.fillRect(hx, hy, 5, 4);
+      break;
+    case 'beanie': {
+      const hat = shade(look.shirtColor, -0.25);
+      ctx.fillRect(hx - 1, hy + 2, 1, 2); ctx.fillRect(hx + 5, hy + 2, 1, 2); // hair poking out
+      ctx.fillStyle = hat; ctx.fillRect(hx - 1, hy - 2, 7, 4);
+      ctx.fillStyle = shade(hat, 0.3); ctx.fillRect(hx - 1, hy + 1, 7, 1);       // folded cuff
+      ctx.fillStyle = '#f0ece4'; px(ctx, hx + 2, hy - 3);                         // pom-pom
+      break;
+    }
+    case 'cap': {
+      const cap = shade(look.pants, 0.2);
+      ctx.fillRect(back, hy + 1, 1, 2);                                          // hair under the cap
+      ctx.fillStyle = cap; ctx.fillRect(hx - 1, hy - 1, 7, 2);
+      if (!away) ctx.fillRect(dir > 0 ? hx + 4 : hx - 2, hy + 1, 3, 1);          // brim points where you face
+      else ctx.fillRect(hx, hy + 1, 5, 2);
+      ctx.fillStyle = shade(cap, 0.4); px(ctx, hx + 2, hy - 1);                   // button on top
+      break;
+    }
+  }
+}
+
+// Downed: lying on their back, flashing, in their own clothes.
+function drawDowned(ctx, x, y, look, t) {
+  ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 8);
+  ctx.fillStyle = look.pants; ctx.fillRect(x - 7, y - 2, 4, 2); ctx.fillRect(x - 7, y + 1, 4, 2);
+  ctx.fillStyle = look.shoes; ctx.fillRect(x - 8, y - 2, 1, 2); ctx.fillRect(x - 8, y + 1, 1, 2);
+  ctx.fillStyle = look.shirtColor; ctx.fillRect(x - 3, y - 2, 6, 5);
+  ctx.fillStyle = look.skin; ctx.fillRect(x + 3, y - 2, 4, 5); px(ctx, x - 2, y - 4, 2, 2); px(ctx, x - 1, y + 3, 2, 2);
+  ctx.fillStyle = look.hairColor; ctx.fillRect(x + 6, y - 2, 2, 5);
+  ctx.fillStyle = '#1a1a1a'; px(ctx, x + 4, y - 1); px(ctx, x + 4, y + 1); // eyes shut-ish
+  ctx.globalAlpha = 1;
+}
+
+// Little portrait for the lobby list: the character facing you, empty-handed.
+export function drawAvatar(canvas, look) {
+  const g = canvas.getContext('2d');
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  drawPlayer(g, canvas.width / 2, canvas.height - 4, Math.PI * 0.35, look, 0, 0, false, -1);
 }
 
 const ZSKIN = ['#6fae5a', '#a3c95a', '#4f7a46'];

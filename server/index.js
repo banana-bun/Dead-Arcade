@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { MIN_PLAYERS, MAX_PLAYERS, PLAYER_COLORS, TICK_RATE, SNAPSHOT_RATE, WEAPONS, MATCH_OPTIONS } from '../shared/config.js';
+import { MIN_PLAYERS, MAX_PLAYERS, PLAYER_COLORS, TICK_RATE, SNAPSHOT_RATE, WEAPONS, MATCH_OPTIONS, randomLook } from '../shared/config.js';
 import { MAPS } from '../shared/map.js';
 import { Game } from './game.js';
 import { Station } from './music.js';
@@ -95,7 +95,7 @@ function roomInfo(room) {
     state: room.game ? 'playing' : 'lobby',
     minPlayers,
     maxPlayers: MAX_PLAYERS,
-    players: [...room.players.values()].map(c => ({ id: c.id, name: c.name, color: c.color })),
+    players: [...room.players.values()].map(c => ({ id: c.id, name: c.name, color: c.color, look: c.look })),
   };
 }
 
@@ -134,6 +134,8 @@ function joinRoom(c, room) {
   if (room.players.size >= MAX_PLAYERS) return send(c, { t: 'error', text: 'That lobby is full.' });
   if (c.room) leaveRoom(c);
   c.color = pickColor(room);
+  // a fresh, unique character for this lobby (no shared skin tone or hairstyle)
+  c.look = randomLook([...room.players.values()].map(o => o.look), c.color);
   room.players.set(c.id, c);
   c.room = room;
   send(c, { t: 'joined', code: room.code });
@@ -258,6 +260,14 @@ wss.on('connection', ws => {
         if (c.chatTimes.length >= 6) { send(c, { t: 'chat', sys: true, text: 'Slow down, you are spamming.' }); break; }
         c.chatTimes.push(now);
         broadcast(c.room, { t: 'chat', from: c.name, color: c.color, text });
+        break;
+      }
+      case 'reroll': { // new random look, still unique in the lobby (not mid-match)
+        const room = c.room;
+        if (!room || room.game) break;
+        // counting your own current look as taken guarantees a visibly new skin tone and hairstyle
+        c.look = randomLook([...room.players.values()].map(o => o.look), c.color);
+        broadcast(room, { t: 'room', room: roomInfo(room) });
         break;
       }
       case 'option': {
